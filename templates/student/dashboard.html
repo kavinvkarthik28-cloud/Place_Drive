@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Student{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">My Account</span>
+<a href="/dashboard" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a href="/student/profile" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</a>
+<a href="/student/apply" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Apply</a>
+<a href="/student/status" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>My Status</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <h1 class="page-title" id="hdrTitle">My Dashboard</h1>
+    <p class="page-subtitle" id="hdrSub">Loading your placement overview…</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card animate animate-d1"><div class="stat-label">Applications Used</div><div class="stat-value" id="kApps">—</div></div>
+  <div class="stat-card animate animate-d2"><div class="stat-label">Remaining</div><div class="stat-value" id="kRem">—</div></div>
+  <div class="stat-card animate animate-d3"><div class="stat-label">Shortlisted</div><div class="stat-value" id="kShort">—</div></div>
+  <div class="stat-card animate animate-d4"><div class="stat-label">Interviews</div><div class="stat-value" id="kInt">—</div></div>
+  <div class="stat-card animate" style="animation-delay:.25s"><div class="stat-label">CGPA</div><div class="stat-value" id="kCgpa">—</div></div>
+</div>
+
+<div class="two-col">
+  <div class="card animate animate-d2">
+    <div class="card-title"><span class="dot"></span>My Applications</div>
+    <div id="appsWrap"><div class="empty"><div class="empty-icon">📄</div><div class="empty-text">No applications yet</div></div></div>
+  </div>
+  <div class="card animate animate-d3">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Upcoming Interviews</div>
+    <div id="schWrap"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No interviews scheduled yet</div></div></div>
+  </div>
+</div>
+
+<div class="card animate animate-d4" style="margin-top:24px">
+  <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Profile Snapshot</div>
+  <div id="profileSnap"><div class="empty"><div class="empty-text">Loading…</div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const STATUS_BADGE = {
+  'Applied':     'badge-blue',
+  'Shortlisted': 'badge-purple',
+  'Scheduled':   'badge-yellow',
+  'Completed':   'badge-green',
+  'Rejected':    'badge-red',
+};
+
+function nowMs(){ return Date.now(); }
+function intMs(date, time){ // "YYYY-MM-DD" + "HH:MM" → ms
+  if(!date || !time) return null;
+  const t = new Date(`${date}T${time}:00`).getTime();
+  return isNaN(t) ? null : t;
+}
+
+async function load(){
+  const [me, companies, shortlist, schedule] = await Promise.all([
+    api('/api/students/me'),
+    api('/api/companies').catch(()=>[]),
+    api('/api/shortlist').catch(()=>[]),
+    api('/api/schedule').catch(()=>[]),
+  ]);
+
+  // Header
+  document.getElementById('hdrTitle').textContent = `Welcome, ${me.name}`;
+  document.getElementById('hdrSub').textContent = `Roll ${me.roll} · ${me.skills.length} skills · CGPA ${me.cgpa}`;
+
+  // Stat cards
+  const appsUsed = me.applied_companies.length;
+  const remaining = Math.max(0, 3 - appsUsed);
+  document.getElementById('kApps').textContent = `${appsUsed}/3`;
+  document.getElementById('kRem').textContent  = remaining;
+  document.getElementById('kShort').textContent = (shortlist && shortlist.length) ? shortlist.length : '—';
+  document.getElementById('kInt').textContent  = (schedule || []).length;
+  document.getElementById('kCgpa').textContent = me.cgpa;
+
+  // Build {company → schedule entry} for quick lookup
+  const schByCompany = {};
+  (schedule || []).forEach(e => { schByCompany[e.company] = e; });
+
+  // Status logic per applied company
+  const shortlistRun = Array.isArray(shortlist);
+  const matchedSet  = new Set((shortlist || []).map(r => r.company));
+
+  function deriveStatus(companyName){
+    const sch = schByCompany[companyName];
+    if (sch){
+      const t = intMs(sch.date, sch.time);
+      if (t && t < nowMs()) return 'Completed';
+      return 'Scheduled';
+    }
+    if (matchedSet.has(companyName)) return 'Shortlisted';
+    if (shortlistRun && matchedSet.size && !matchedSet.has(companyName)) return 'Rejected';
+    return 'Applied';
+  }
+
+  // Applications card
+  const appsWrap = document.getElementById('appsWrap');
+  if (!appsUsed){
+    appsWrap.innerHTML = `<div class="empty"><div class="empty-icon">📄</div><div class="empty-text">No applications yet — head to Apply</div></div>`;
+  } else {
+    const compMap = Object.fromEntries(companies.map(c => [c.name, c]));
+    appsWrap.innerHTML = `<table><thead><tr><th>Company</th><th>Min CGPA</th><th>Status</th></tr></thead><tbody>${
+      me.applied_companies.map(name => {
+        const c = compMap[name] || {};
+        const st = deriveStatus(name);
+        return `<tr>
+          <td style="font-weight:500">${name}</td>
+          <td>${c.min_cgpa !== undefined ? `<span class="badge badge-green">${c.min_cgpa}</span>` : '—'}</td>
+          <td><span class="badge ${STATUS_BADGE[st]}">${st}</span></td>
+        </tr>`;
+      }).join('')
+    }</tbody></table>`;
+  }
+
+  // Schedule card
+  const schWrap = document.getElementById('schWrap');
+  if (!(schedule && schedule.length)){
+    schWrap.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No interviews scheduled yet</div></div>`;
+  } else {
+    schWrap.innerHTML = schedule.map(e => {
+      const t = intMs(e.date, e.time);
+      const past = t && t < nowMs();
+      return `<div class="schedule-item">
+        <div class="schedule-time"><div class="schedule-date">${e.date}</div><div class="schedule-hour">${e.time}</div></div>
+        <div>
+          <div class="schedule-student" style="color:var(--accent)">${e.company}</div>
+          <div class="schedule-company"><span class="badge ${past ? 'badge-green' : 'badge-yellow'}">${past ? 'Completed' : 'Scheduled'}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Profile snapshot
+  document.getElementById('profileSnap').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:18px">
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Roll</div><div style="font-weight:600">${me.roll}</div></div>
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CGPA</div><span class="badge badge-green">${me.cgpa}</span></div>
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Backlogs</div>${me.backlogs > 0 ? `<span class="badge badge-red">${me.backlogs}</span>` : `<span class="badge badge-green">0</span>`}</div>
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Skills</div><div style="font-weight:600">${me.skills.length}</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">${me.skills.map(s => `<span class="badge badge-purple">${s}</span>`).join('')}</div>`;
+}
+
+load().catch(e => showToast(e.message || 'Failed to load dashboard', 'error'));
+</script>{% endblock %}
