@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Apply — Student{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">My Account</span>
+<a href="/dashboard" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a href="/student/profile" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</a>
+<a href="/student/apply" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Apply</a>
+<a href="/student/status" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>My Status</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate"><div><h1 class="page-title">Apply to Companies</h1><p class="page-subtitle">You can apply to a maximum of 3 companies</p></div></div>
+<div class="two-col">
+  <div class="card animate animate-d1">
+    <div class="card-title"><span class="dot"></span>Submit Application</div>
+    <div id="applyStatus" style="margin-bottom:16px"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>Select Company</label><select id="compSel"><option value="">— Choose a company —</option></select></div>
+    <div id="compDetails" style="display:none;margin-bottom:16px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:var(--radius-sm)"></div>
+    <button class="btn btn-primary" id="applyBtn" onclick="doApply()" style="width:100%;justify-content:center">Apply Now</button>
+  </div>
+  <div class="card animate animate-d2">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>All Available Companies</div>
+    <div id="companiesList"><div class="empty"><div class="empty-icon">🏢</div><div class="empty-text">Loading...</div></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+let myApps=[], allCompanies=[];
+
+async function init(){
+  const [s, companies]=await Promise.all([api('/api/students/me'), api('/api/companies')]);
+  myApps=s.applied_companies; allCompanies=companies;
+
+  // Show application count
+  const remaining=3-myApps.length;
+  document.getElementById('applyStatus').innerHTML=`<div style="padding:10px 14px;background:rgba(79,138,255,0.08);border:1px solid rgba(79,138,255,0.2);border-radius:var(--radius-sm);font-size:13px">
+    <span style="color:var(--accent);font-weight:600">${myApps.length}/3</span> applications used &nbsp;·&nbsp;
+    <span style="color:var(--text-muted)">${remaining} remaining</span></div>`;
+
+  const sel=document.getElementById('compSel');
+  companies.forEach(c=>{
+    const applied=myApps.includes(c.name);
+    const opt=document.createElement('option');
+    opt.value=c.name; opt.textContent=c.name+(applied?' (Applied)':'');
+    if(applied)opt.disabled=true;
+    sel.appendChild(opt);
+  });
+
+  sel.addEventListener('change',()=>{
+    const c=companies.find(x=>x.name===sel.value);
+    if(!c){document.getElementById('compDetails').style.display='none';return;}
+    const top=Object.entries(c.skill_weights).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('compDetails').style.display='block';
+    document.getElementById('compDetails').innerHTML=`
+      <div style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Company Details</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px">
+        <div>Min CGPA <span class="badge badge-green" style="margin-left:6px">${c.min_cgpa}</span></div>
+        <div>Max Backlogs <span class="badge badge-yellow" style="margin-left:6px">${c.allowed_backlogs}</span></div>
+      </div>
+      ${top.length?`<div style="margin-top:10px;font-size:12px;color:var(--text-dim);margin-bottom:6px">Key Skills Required</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${top.slice(0,5).map(([s,w])=>`<span class="badge badge-blue">${s} ×${w}</span>`).join('')}</div>`:''}`;
+  });
+
+  renderCompaniesList(companies);
+}
+
+function renderCompaniesList(companies){
+  const wrap=document.getElementById('companiesList');
+  if(!companies.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">🏢</div><div class="empty-text">No companies available</div></div>';return;}
+  wrap.innerHTML=companies.map(c=>{
+    const applied=myApps.includes(c.name);
+    return`<div style="padding:12px 0;border-bottom:1px solid var(--glass-border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;font-size:14px">${c.name}</span>
+        ${applied?'<span class="badge badge-green">✓ Applied</span>':'<span class="badge badge-blue">Open</span>'}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Min CGPA: ${c.min_cgpa} · Max Backlogs: ${c.allowed_backlogs}</div>
+    </div>`;
+  }).join('');
+}
+
+async function doApply(){
+  const company=document.getElementById('compSel').value;
+  if(!company)return showToast('Select a company','error');
+  if(myApps.length>=3)return showToast('Application limit reached','error');
+  const btn=document.getElementById('applyBtn');setLoading(btn,true);
+  try{
+    await api('/api/apply','POST',{company});
+    showToast(`Applied to ${company}!`);
+    await init();
+  }catch(e){showToast(e.message,'error');}
+  setLoading(btn,false);
+}
+init();
+</script>{% endblock %}
