@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Shortlisting — Admin{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">Overview</span><a href="/dashboard" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a></div>
+<div class="nav-section"><span class="nav-label">Manage</span>
+<a href="/admin/students" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Students</a>
+<a href="/admin/companies" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>Companies</a>
+<a href="/admin/applications" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Applications</a></div>
+<div class="nav-section"><span class="nav-label">Process</span>
+<a href="/admin/shortlist" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Shortlisting</a>
+<a href="/admin/schedule" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate"><div><h1 class="page-title">Shortlisting</h1><p class="page-subtitle">Score and match students to best-fit companies</p></div>
+<button class="btn btn-success" id="runBtn" onclick="runShortlist()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21"/></svg>Run Shortlisting</button></div>
+<div id="resultsWrap"><div class="card animate"><div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">Click "Run Shortlisting" to match students to companies</div></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+async function runShortlist(){
+  const btn=document.getElementById('runBtn');setLoading(btn,true);
+  try{const results=await api('/api/shortlist','POST');renderResults(results);showToast('Shortlisting complete');}
+  catch(e){showToast(e.message,'error');}setLoading(btn,false);
+}
+function renderResults(results){
+  const allScores = results.flatMap(r => (r.matches||[]).map(m => m.score));
+  const maxScore = Math.max(...allScores, 1);
+  const matched = results.filter(r => r.matches && r.matches.length);
+  const unmatched = results.filter(r => !r.matches || !r.matches.length);
+  let html='';
+  if(matched.length){
+    const totalRows = matched.reduce((n, r) => n + r.matches.length, 0);
+    html += `<div class="card animate" style="margin-bottom:24px"><div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Matched (${matched.length} students · ${totalRows} matches)</div>
+      <table><thead><tr><th>Roll</th><th>Student</th><th>Rank</th><th>Company</th><th>Score</th></tr></thead><tbody>
+      ${matched.flatMap(r => r.matches.map((m, i) => `<tr>
+        <td><span class="badge badge-blue">${r.roll}</span></td>
+        <td>${r.student}</td>
+        <td><span class="badge ${i===0?'badge-purple':''}">#${i+1}</span></td>
+        <td><span class="badge badge-purple">${m.company}</span></td>
+        <td style="min-width:120px">
+          <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px">${m.score}</div>
+          <div class="score-bar"><div class="score-fill" style="width:${Math.round((m.score/maxScore)*100)}%"></div></div>
+        </td></tr>`)).join('')}
+      </tbody></table></div>`;
+  }
+  if(unmatched.length) html+=`<div class="card animate animate-d2"><div class="card-title"><span class="dot" style="background:var(--danger)"></span>Not Eligible (${unmatched.length})</div>
+    <table><thead><tr><th>Roll</th><th>Student</th><th>Reason</th></tr></thead><tbody>
+    ${unmatched.map(r=>`<tr><td><span class="badge badge-blue">${r.roll}</span></td><td>${r.student}</td><td><span class="badge badge-red">No eligible application</span></td></tr>`).join('')}
+    </tbody></table></div>`;
+  document.getElementById('resultsWrap').innerHTML=html||'<div class="card"><div class="empty"><div class="empty-text">No results</div></div></div>';
+}
+async function loadExisting(){
+  try{const e=await api('/api/shortlist');if(e.length)document.getElementById('resultsWrap').innerHTML=`<div class="card animate"><div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Last Results (${e.length})</div>
+    <table><thead><tr><th>Roll</th><th>Name</th><th>Company</th></tr></thead><tbody>
+    ${e.map(r=>`<tr><td><span class="badge badge-blue">${r.roll}</span></td><td>${r.name}</td><td><span class="badge badge-purple">${r.company}</span></td></tr>`).join('')}
+    </tbody></table><p style="margin-top:14px;font-size:12px;color:var(--text-dim)">Click Run to refresh.</p></div>`;}catch(e){}
+}
+loadExisting();
+</script>{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — PlaceDrive{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">Overview</span>
+  <a href="/dashboard" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a></div>
+<div class="nav-section"><span class="nav-label">Manage</span>
+  <a href="/admin/students" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Students</a>
+  <a href="/admin/companies" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>Companies</a>
+  <a href="/admin/applications" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Applications</a></div>
+<div class="nav-section"><span class="nav-label">Process</span>
+  <a href="/admin/shortlist" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Shortlisting</a>
+  <a href="/admin/schedule" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate"><div><h1 class="page-title">Admin Dashboard</h1><p class="page-subtitle">Full placement drive control panel</p></div></div>
+<div class="stats-grid">
+  <div class="stat-card animate animate-d1"><div class="stat-label">Students</div><div class="stat-value" id="s1">—</div></div>
+  <div class="stat-card animate animate-d2"><div class="stat-label">Companies</div><div class="stat-value" id="s2">—</div></div>
+  <div class="stat-card animate animate-d3"><div class="stat-label">Applications</div><div class="stat-value" id="s3">—</div></div>
+  <div class="stat-card animate animate-d4"><div class="stat-label">Shortlisted</div><div class="stat-value" id="s4">—</div></div>
+  <div class="stat-card animate" style="animation-delay:.25s"><div class="stat-label">Scheduled</div><div class="stat-value" id="s5">—</div></div>
+</div>
+<div class="two-col">
+  <div class="card animate animate-d2"><div class="card-title"><span class="dot"></span>Recent Students</div><div id="recStudents"><div class="empty"><div class="empty-icon">👤</div><div class="empty-text">No students yet</div></div></div></div>
+  <div class="card animate animate-d3"><div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Companies</div><div id="recCompanies"><div class="empty"><div class="empty-icon">🏢</div><div class="empty-text">No companies yet</div></div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+async function load() {
+  const stats=await api('/api/stats');
+  ['s1','s2','s3','s4','s5'].forEach((id,i)=>document.getElementById(id).textContent=[stats.students,stats.companies,stats.applications,stats.shortlisted,stats.scheduled][i]);
+  const [students,companies]=await Promise.all([api('/api/students'),api('/api/companies')]);
+  if(students.length) document.getElementById('recStudents').innerHTML=`<table><thead><tr><th>Roll</th><th>Name</th><th>CGPA</th><th>Apps</th></tr></thead><tbody>${students.slice(0,6).map(s=>`<tr><td><span class="badge badge-blue">${s.roll}</span></td><td>${s.name}</td><td>${s.cgpa}</td><td>${s.applied_companies.length}/3</td></tr>`).join('')}</tbody></table>`;
+  if(companies.length) document.getElementById('recCompanies').innerHTML=`<table><thead><tr><th>Company</th><th>Min CGPA</th><th>Backlogs</th></tr></thead><tbody>${companies.map(c=>`<tr><td>${c.name}</td><td><span class="badge badge-green">${c.min_cgpa}</span></td><td>${c.allowed_backlogs}</td></tr>`).join('')}</tbody></table>`;
+}
+load();
+</script>{% endblock %}
