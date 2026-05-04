@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Company{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">My Company</span>
+<a href="/dashboard" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a href="/company/profile" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>Company Profile</a>
+<a href="/company/applicants" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Applicants</a>
+<a href="/company/slots" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Interview Slots</a>
+<a href="/company/schedule" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>My Schedule</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <h1 class="page-title" id="hdrTitle">Company Dashboard</h1>
+    <p class="page-subtitle" id="hdrSub">Loading hiring overview…</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card animate animate-d1"><div class="stat-label">Total Applicants</div><div class="stat-value" id="kApps">—</div></div>
+  <div class="stat-card animate animate-d2"><div class="stat-label">Shortlisted</div><div class="stat-value" id="kShort">—</div></div>
+  <div class="stat-card animate animate-d3"><div class="stat-label">Scheduled</div><div class="stat-value" id="kSch">—</div></div>
+  <div class="stat-card animate animate-d4"><div class="stat-label">Slots Set</div><div class="stat-value" id="kSlots">—</div></div>
+  <div class="stat-card animate" style="animation-delay:.25s"><div class="stat-label">Min CGPA</div><div class="stat-value" id="kCgpa">—</div></div>
+</div>
+
+<div class="two-col">
+  <div class="card animate animate-d2">
+    <div class="card-title"><span class="dot"></span>Recent Applicants</div>
+    <div class="table-wrap" id="appsWrap"><div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No applicants yet</div></div></div>
+  </div>
+  <div class="card animate animate-d3">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Interview Schedule</div>
+    <div id="schWrap"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No interviews scheduled yet</div></div></div>
+  </div>
+</div>
+
+<div class="card animate animate-d4" style="margin-top:24px">
+  <div class="card-title"><span class="dot" style="background:var(--accent3)"></span>Shortlisted Students</div>
+  <div class="table-wrap" id="shortWrap"><div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">Shortlisting not run yet</div></div></div>
+</div>
+
+<div class="card animate" style="margin-top:24px;animation-delay:.3s">
+  <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Hiring Criteria</div>
+  <div id="critWrap"><div class="empty"><div class="empty-text">Loading…</div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+async function load(){
+  const [me, applicants, shortlist, schedule, slots] = await Promise.all([
+    api('/api/companies/me'),
+    api('/api/companies/applicants').catch(()=>[]),
+    api('/api/shortlist').catch(()=>[]),
+    api('/api/schedule').catch(()=>[]),
+    api('/api/slots').catch(()=>[]),
+  ]);
+
+  // Header
+  document.getElementById('hdrTitle').textContent = me.name;
+  document.getElementById('hdrSub').textContent = `Min CGPA ${me.min_cgpa} · ${Object.keys(me.skill_weights || {}).length} skill criteria`;
+
+  // Stats
+  document.getElementById('kApps').textContent  = applicants.length;
+  document.getElementById('kShort').textContent = shortlist.length;
+  document.getElementById('kSch').textContent   = (schedule || []).length;
+  document.getElementById('kSlots').textContent = (slots || []).length;
+  document.getElementById('kCgpa').textContent  = me.min_cgpa;
+
+  // Applicants table (top 6)
+  const appsWrap = document.getElementById('appsWrap');
+  if (!applicants.length){
+    appsWrap.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No applicants yet</div></div>`;
+  } else {
+    appsWrap.innerHTML = `<table><thead><tr><th>Roll</th><th>Name</th><th>CGPA</th><th>Backlogs</th></tr></thead><tbody>${
+      applicants.slice(0, 6).map(a => `<tr>
+        <td><span class="badge badge-blue">${a.roll}</span></td>
+        <td>${a.name}</td>
+        <td><span class="badge badge-green">${a.cgpa}</span></td>
+        <td>${a.backlogs > 0 ? `<span class="badge badge-red">${a.backlogs}</span>` : `<span class="badge badge-green">0</span>`}</td>
+      </tr>`).join('')
+    }</tbody></table>${applicants.length > 6 ? `<div style="text-align:right;margin-top:10px;font-size:12px;color:var(--text-dim)">+ ${applicants.length - 6} more — see Applicants tab</div>` : ''}`;
+  }
+
+  // Schedule
+  const schWrap = document.getElementById('schWrap');
+  if (!(schedule && schedule.length)){
+    schWrap.innerHTML = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">No interviews scheduled yet</div></div>`;
+  } else {
+    schWrap.innerHTML = schedule.map(e => `
+      <div class="schedule-item">
+        <div class="schedule-time"><div class="schedule-date">${e.date}</div><div class="schedule-hour">${e.time}</div></div>
+        <div>
+          <div class="schedule-student">${e.student}</div>
+          <div class="schedule-company"><span class="badge badge-yellow">Scheduled</span></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Shortlisted students table
+  const shortWrap = document.getElementById('shortWrap');
+  if (!shortlist.length){
+    shortWrap.innerHTML = `<div class="empty"><div class="empty-icon">⭐</div><div class="empty-text">Shortlisting not run yet — admin will trigger this</div></div>`;
+  } else {
+    shortWrap.innerHTML = `<table><thead><tr><th>Roll</th><th>Name</th><th>CGPA</th><th>Backlogs</th><th>Skills</th></tr></thead><tbody>${
+      shortlist.map(s => `<tr>
+        <td><span class="badge badge-blue">${s.roll}</span></td>
+        <td>${s.name}</td>
+        <td><span class="badge badge-green">${s.cgpa}</span></td>
+        <td>${s.backlogs > 0 ? `<span class="badge badge-red">${s.backlogs}</span>` : `<span class="badge badge-green">0</span>`}</td>
+        <td><div style="display:flex;flex-wrap:wrap;gap:4px">${(s.skills || []).slice(0,4).map(sk => `<span class="badge badge-purple">${sk}</span>`).join('')}${s.skills && s.skills.length > 4 ? `<span class="badge">+${s.skills.length - 4}</span>` : ''}</div></td>
+      </tr>`).join('')
+    }</tbody></table>`;
+  }
+
+  // Hiring criteria card
+  const weights = Object.entries(me.skill_weights || {}).sort((a, b) => b[1] - a[1]);
+  document.getElementById('critWrap').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:18px">
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Min CGPA</div><span class="badge badge-green">${me.min_cgpa}</span></div>
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Allowed Backlogs</div>${me.allowed_backlogs > 0 ? `<span class="badge badge-yellow">${me.allowed_backlogs}</span>` : `<span class="badge badge-green">0</span>`}</div>
+      <div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Required Skills</div><div style="font-weight:600">${weights.length}</div></div>
+    </div>
+    ${weights.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${weights.map(([s, w]) => `<span class="badge badge-blue">${s} ×${w}</span>`).join('')}</div>`
+      : `<div style="font-size:13px;color:var(--text-dim)">No skill weights defined</div>`}`;
+}
+
+load().catch(e => showToast(e.message || 'Failed to load dashboard', 'error'));
+</script>{% endblock %}
