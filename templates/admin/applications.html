@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Applications — Admin{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">Overview</span><a href="/dashboard" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a></div>
+<div class="nav-section"><span class="nav-label">Manage</span>
+<a href="/admin/students" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Students</a>
+<a href="/admin/companies" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>Companies</a>
+<a href="/admin/applications" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Applications</a></div>
+<div class="nav-section"><span class="nav-label">Process</span>
+<a href="/admin/shortlist" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Shortlisting</a>
+<a href="/admin/schedule" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate"><div><h1 class="page-title">Applications</h1><p class="page-subtitle">All student–company applications</p></div></div>
+<div class="two-col" style="margin-bottom:24px">
+  <div class="card animate animate-d1">
+    <div class="card-title"><span class="dot"></span>Apply for Student</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group"><label>Student Roll</label><input type="text" id="roll" placeholder="CS101"></div>
+      <div class="form-group"><label>Company</label><select id="compSel"><option value="">— Select —</option></select></div>
+      <button class="btn btn-primary" id="applyBtn" onclick="doApply()">Submit Application</button>
+    </div>
+  </div>
+  <div class="card animate animate-d2">
+    <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Student Lookup</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px"><input type="text" id="lookRoll" placeholder="Roll number" style="flex:1"><button class="btn btn-secondary" onclick="lookup()">Search</button></div>
+    <div id="lookResult"><div class="empty"><div class="empty-text" style="font-size:13px;color:var(--text-dim)">Search a student</div></div></div>
+  </div>
+</div>
+<div class="card animate animate-d3"><div class="card-title"><span class="dot" style="background:var(--accent3)"></span>All Applications</div><div class="table-wrap" id="allApps"><div class="empty"><div class="empty-icon">📄</div><div class="empty-text">No applications yet</div></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+async function init(){
+  const companies=await api('/api/companies'),sel=document.getElementById('compSel');
+  companies.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.textContent=c.name;sel.appendChild(o);});
+  loadApps();
+}
+async function doApply(){
+  const roll=document.getElementById('roll').value.trim(),company=document.getElementById('compSel').value;
+  if(!roll||!company)return showToast('Fill both fields','error');
+  const btn=document.getElementById('applyBtn');setLoading(btn,true);
+  try{await api('/api/apply','POST',{roll,company});showToast('Application submitted!');loadApps();}
+  catch(e){showToast(e.message,'error');}setLoading(btn,false);
+}
+async function lookup(){
+  const roll=document.getElementById('lookRoll').value.trim();if(!roll)return;
+  const students=await api('/api/students'),s=students.find(x=>x.roll.toLowerCase()===roll.toLowerCase()),div=document.getElementById('lookResult');
+  if(!s){div.innerHTML='<p style="color:var(--danger);font-size:13px">Not found</p>';return;}
+  div.innerHTML=`<div style="font-weight:600">${s.name}</div><div style="font-size:12px;color:var(--text-muted);margin:4px 0">CGPA: ${s.cgpa} | Backlogs: ${s.backlogs}</div>
+    ${s.applied_companies.map(c=>`<div style="padding:6px 0;border-bottom:1px solid var(--glass-border);font-size:13px;color:var(--text-muted)">${c}</div>`).join('')||'<div style="color:var(--text-dim);font-size:13px;margin-top:8px">No applications</div>'}`;
+}
+async function loadApps(){
+  const students=await api('/api/students'),rows=[],wrap=document.getElementById('allApps');
+  students.forEach(s=>s.applied_companies.forEach(c=>rows.push({roll:s.roll,name:s.name,company:c})));
+  if(!rows.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">📄</div><div class="empty-text">No applications yet</div></div>';return;}
+  wrap.innerHTML=`<table><thead><tr><th>Roll</th><th>Student</th><th>Company</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><span class="badge badge-blue">${r.roll}</span></td><td>${r.name}</td><td>${r.company}</td><td><span class="badge badge-yellow">Pending</span></td></tr>`).join('')}</tbody></table>`;
+}
+init();
+</script>{% endblock %}
