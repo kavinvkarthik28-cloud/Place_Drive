@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Student{% endblock %}
+{% block nav %}
+<div class="nav-section"><span class="nav-label">My Account</span>
+<a href="/dashboard" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+<a href="/student/profile" class="nav-item active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</a>
+<a href="/student/apply" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Apply</a>
+<a href="/student/status" class="nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>My Status</a></div>
+{% endblock %}
+{% block content %}
+<div class="page-header animate"><div><h1 class="page-title">My Profile</h1><p class="page-subtitle">Your registered information</p></div></div>
+<div id="profileWrap"><div class="card animate"><div class="empty"><div class="empty-icon">👤</div><div class="empty-text">Loading...</div></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+async function load(){
+  const s=await api('/api/students/me');
+  document.getElementById('profileWrap').innerHTML=`
+    <div class="card animate">
+      <div class="card-title"><span class="dot"></span>Personal Information</div>
+      <div class="form-grid" style="pointer-events:none">
+        <div class="form-group"><label>Roll Number</label><input value="${s.roll}" readonly style="opacity:.7"></div>
+        <div class="form-group"><label>Full Name</label><input value="${s.name}" readonly style="opacity:.7"></div>
+        <div class="form-group"><label>CGPA</label><input value="${s.cgpa}" readonly style="opacity:.7"></div>
+        <div class="form-group"><label>Backlogs</label><input value="${s.backlogs}" readonly style="opacity:.7"></div>
+      </div>
+      <div style="margin-top:20px">
+        <label style="font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:10px">Skills</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">${s.skills.map(sk=>`<span class="badge badge-purple" style="font-size:12px;padding:5px 12px">${sk}</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="card animate animate-d2" style="margin-top:20px">
+      <div class="card-title"><span class="dot" style="background:var(--accent2)"></span>Applied Companies (${s.applied_companies.length}/3)</div>
+      ${s.applied_companies.length
+        ? s.applied_companies.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--glass-border)">
+            <span style="font-weight:500">${c}</span><span class="badge badge-yellow">Applied</span></div>`).join('')
+        : '<div class="empty"><div class="empty-text">No applications yet. Go to Apply tab.</div></div>'}
+    </div>`;
+}
+load();
+</script>{% endblock %}
