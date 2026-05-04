@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlaceDrive — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/main.css">
+<style>
+body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+
+.login-page { width:100%; max-width:480px; z-index:10; padding:20px; animation: fadeUp 0.5s ease; }
+
+.brand { text-align:center; margin-bottom:36px; }
+.brand-icon { width:58px; height:58px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:18px; display:grid; place-items:center; color:#fff; margin:0 auto 14px; box-shadow:0 8px 32px rgba(79,138,255,0.3); }
+.brand-title { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; background:linear-gradient(135deg,#fff 50%,var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.brand-sub { font-size:13px; color:var(--text-muted); margin-top:4px; }
+
+/* Role selector */
+.role-selector { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:24px; }
+
+.role-btn {
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:16px 10px; border-radius:var(--radius); cursor:pointer;
+  border:1px solid var(--glass-border); background:var(--glass);
+  transition:all 0.25s; color:var(--text-muted); backdrop-filter:blur(12px);
+}
+.role-btn:hover { border-color:rgba(255,255,255,0.15); color:var(--text); transform:translateY(-2px); }
+.role-btn.active-student { background:rgba(79,138,255,0.12); border-color:rgba(79,138,255,0.4); color:var(--accent); box-shadow:0 4px 20px rgba(79,138,255,0.15); }
+.role-btn.active-company { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.4); color:var(--accent2); box-shadow:0 4px 20px rgba(167,139,250,0.15); }
+.role-btn.active-admin   { background:rgba(52,211,153,0.12); border-color:rgba(52,211,153,0.4); color:var(--accent3); box-shadow:0 4px 20px rgba(52,211,153,0.15); }
+.role-icon { font-size:24px; }
+.role-label { font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; }
+.role-desc  { font-size:10px; opacity:0.7; text-align:center; line-height:1.3; }
+
+/* Card */
+.login-card {
+  background:rgba(255,255,255,0.04); border:1px solid var(--glass-border);
+  border-radius:var(--radius); padding:28px; backdrop-filter:blur(20px);
+  transition:border-color 0.3s;
+}
+.login-card.card-student { border-color:rgba(79,138,255,0.2); }
+.login-card.card-company { border-color:rgba(167,139,250,0.2); }
+.login-card.card-admin   { border-color:rgba(52,211,153,0.2); }
+
+.card-header { display:flex; align-items:center; gap:10px; margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid var(--glass-border); }
+.card-header-icon { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-size:18px; }
+.icon-student { background:rgba(79,138,255,0.15); }
+.icon-company { background:rgba(167,139,250,0.15); }
+.icon-admin   { background:rgba(52,211,153,0.15); }
+.card-header-text { flex:1; }
+.card-header-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; }
+.card-header-sub   { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+.form-group { margin-bottom:14px; }
+.tab-content { display:none; }
+.tab-content.show { display:block; animation:fadeUp 0.3s ease; }
+
+/* Default creds hint */
+.creds-hint {
+  background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.15);
+  border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:16px; font-size:12px;
+}
+.creds-hint strong { color:var(--accent3); }
+.creds-hint span   { color:var(--text-muted); }
+
+/* Mode toggle */
+.mode-toggle { text-align:center; margin-top:16px; font-size:13px; color:var(--text-muted); }
+.mode-toggle a { color:var(--accent); cursor:pointer; text-decoration:none; font-weight:500; }
+.mode-toggle a:hover { text-decoration:underline; }
+
+/* Register extras */
+.reg-section { font-size:10px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent); margin:18px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--glass-border); }
+.two-col-form { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* Btn color variants */
+.btn-student { background:linear-gradient(135deg,var(--accent),#3b6fd4); box-shadow:0 4px 20px rgba(79,138,255,0.25); color:#fff; }
+.btn-company { background:linear-gradient(135deg,var(--accent2),#7c5cbf); box-shadow:0 4px 20px rgba(167,139,250,0.25); color:#fff; }
+.btn-admin   { background:linear-gradient(135deg,var(--accent3),#059669); box-shadow:0 4px 20px rgba(52,211,153,0.2); color:#fff; }
+.btn-student:hover,.btn-company:hover,.btn-admin:hover { transform:translateY(-1px); filter:brightness(1.1); }
+
+/* Validation */
+.field-wrap{position:relative;}
+.field-wrap input{padding-right:36px;}
+.field-icon{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;opacity:0;transition:opacity 0.2s;}
+.field-icon.show{opacity:1;}
+.field-error{font-size:11px;color:#f87171;margin-top:5px;display:none;animation:fadeUp 0.2s ease;}
+.field-error.show{display:block;}
+.field-hint{font-size:11px;color:var(--text-dim);margin-top:3px;}
+input.valid{border-color:rgba(52,211,153,0.5)!important;background:rgba(52,211,153,0.04)!important;}
+input.invalid{border-color:rgba(248,113,113,0.5)!important;background:rgba(248,113,113,0.04)!important;}
+.strength-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:4px;margin-top:6px;overflow:hidden;}
+.strength-fill{height:100%;border-radius:4px;transition:width 0.3s,background 0.3s;width:0%;}
+.strength-label{font-size:10px;margin-top:3px;}
+.skills-required{font-size:11px;color:#f87171;margin-top:6px;display:none;}
+.skills-required.show{display:block;}
+.skills-grid.invalid-skills .skill-chip{border-color:rgba(248,113,113,0.4);}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+
+<div class="login-page">
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <div class="brand-title">PlaceDrive</div>
+    <div class="brand-sub">Placement Management System</div>
+  </div>
+
+  <!-- Role selector -->
+  <div class="role-selector">
+    <div class="role-btn active-student" onclick="setRole('student')" id="tab-student">
+      <div class="role-icon">👤</div>
+      <div class="role-label">Student</div>
+      <div class="role-desc">Apply to companies</div>
+    </div>
+    <div class="role-btn" onclick="setRole('company')" id="tab-company">
+      <div class="role-icon">🏢</div>
+      <div class="role-label">Company</div>
+      <div class="role-desc">Manage hiring</div>
+    </div>
+    <div class="role-btn" onclick="setRole('admin')" id="tab-admin">
+      <div class="role-icon">⚙️</div>
+      <div class="role-label">Admin</div>
+      <div class="role-desc">Full control</div>
+    </div>
+  </div>
+
+  <!-- Login Card -->
+  <div class="login-card card-student" id="loginCard">
+
+    <!-- STUDENT LOGIN -->
+    <div class="tab-content show" id="content-student">
+      <div class="card-header">
+        <div class="card-header-icon icon-student">👤</div>
+        <div class="card-header-text">
+          <div class="card-header-title">Student Portal</div>
+          <div class="card-header-sub">Sign in to apply for placements</div>
+        </div>
+      </div>
+      <div id="student-login-form">
+        <div class="form-group"><label>Username</label><input type="text" id="s-username" placeholder="Your username"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="s-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin('student')"></div>
+        <button class="btn btn-student" style="width:100%;justify-content:center;margin-top:4px" id="s-login-btn" onclick="doLogin('student')">Sign In as Student</button>
+        <div class="mode-toggle">New student? <a onclick="toggleStudentMode('register')">Register here</a></div>
+      </div>
+      <div id="student-register-form" style="display:none">
+        <div class="reg-section">Account Credentials</div>
+        <div class="two-col-form">
+          <div class="form-group"><label>Username</label><input type="text" id="s-reg-username" placeholder="Choose username"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="s-reg-password" placeholder="Min 6 chars"></div>
+        </div>
+        <div class="reg-section">Student Details</div>
+        <div class="two-col-form">
+          <div class="form-group"><label>Roll Number</label><input type="text" id="s-roll" placeholder="CS101"></div>
+          <div class="form-group"><label>Full Name</label><input type="text" id="s-name" placeholder="Your name"></div>
+          <div class="form-group"><label>CGPA (0–10)</label><input type="number" id="s-cgpa" placeholder="8.5" step="0.01" min="0" max="10"></div>
+          <div class="form-group"><label>Backlogs</label><input type="number" id="s-backlogs" placeholder="0" min="0" value="0"></div>
+        </div>
+        <div class="form-group">
+          <label>Skills — tap to select</label>
+          <div class="skills-grid" id="s-skills" style="margin-top:8px"></div>
+        </div>
+        <button class="btn btn-student" style="width:100%;justify-content:center;margin-top:16px" id="s-reg-btn" onclick="doRegister('student')">Create Student Account</button>
+        <div class="mode-toggle">Already registered? <a onclick="toggleStudentMode('login')">Sign in</a></div>
+      </div>
+    </div>
+
+    <!-- COMPANY LOGIN -->
+    <div class="tab-content" id="content-company">
+      <div class="card-header">
+        <div class="card-header-icon icon-company">🏢</div>
+        <div class="card-header-text">
+          <div class="card-header-title">Company Portal</div>
+          <div class="card-header-sub">Manage applicants and interview slots</div>
+        </div>
+      </div>
+      <div id="company-login-form">
+        <div class="form-group"><label>Username</label><input type="text" id="c-username" placeholder="Your username"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="c-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin('company')"></div>
+        <button class="btn btn-company" style="width:100%;justify-content:center;margin-top:4px" id="c-login-btn" onclick="doLogin('company')">Sign In as Company</button>
+        <div class="mode-toggle">New company? <a onclick="toggleCompanyMode('register')">Register here</a></div>
+      </div>
+      <div id="company-register-form" style="display:none">
+        <div class="reg-section">Account Credentials</div>
+        <div class="two-col-form">
+          <div class="form-group"><label>Username</label><input type="text" id="c-reg-username" placeholder="Choose username"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="c-reg-password" placeholder="Min 6 chars"></div>
+        </div>
+        <div class="reg-section">Company Details</div>
+        <div class="form-group"><label>Company Name</label><input type="text" id="c-name" placeholder="e.g. Google"></div>
+        <div class="two-col-form">
+          <div class="form-group"><label>Min CGPA</label><input type="number" id="c-min-cgpa" placeholder="7.0" step="0.01" min="0" max="10"></div>
+          <div class="form-group"><label>Allowed Backlogs</label><input type="number" id="c-backlogs" placeholder="0" min="0" value="0"></div>
+        </div>
+        <div class="form-group">
+          <label>Skill Weights <span style="color:var(--text-dim);font-size:10px;font-weight:400;text-transform:none">(0 = not required, max 10)</span></label>
+          <div id="c-weights" style="margin-top:8px;max-height:160px;overflow-y:auto;border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:8px"></div>
+        </div>
+        <button class="btn btn-company" style="width:100%;justify-content:center;margin-top:16px" id="c-reg-btn" onclick="doRegister('company')">Create Company Account</button>
+        <div class="mode-toggle">Already registered? <a onclick="toggleCompanyMode('login')">Sign in</a></div>
+      </div>
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div class="tab-content" id="content-admin">
+      <div class="card-header">
+        <div class="card-header-icon icon-admin">⚙️</div>
+        <div class="card-header-text">
+          <div class="card-header-title">Admin Portal</div>
+          <div class="card-header-sub">Full system access and control</div>
+        </div>
+      </div>
+      <div class="creds-hint">
+        <strong>Default credentials</strong><br>
+        <span>Username: <strong>admin</strong> &nbsp;·&nbsp; Password: <strong>admin123</strong></span>
+      </div>
+      <div class="form-group"><label>Admin Username</label><input type="text" id="a-username" placeholder="admin" value="admin"></div>
+      <div class="form-group"><label>Admin Password</label><input type="password" id="a-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin('admin')"></div>
+      <button class="btn btn-admin" style="width:100%;justify-content:center;margin-top:4px" id="a-login-btn" onclick="doLogin('admin')">Sign In as Admin</button>
+    </div>
+
+  </div><!-- end login-card -->
+</div>
+
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastMsg">Success</span></div>
+<script src="/static/js/main.js"></script>
+<script>
+const SKILLS = ["Python","Java","C++","C","Machine Learning","Data Science","Web Development","App Development","Cybersecurity","Cloud Computing","React","Django","SQL","Git"];
+let currentRole = 'student';
+
+// Build student skill chips
+const sChips = document.getElementById('s-skills');
+SKILLS.forEach(s => {
+  const el = document.createElement('div');
+  el.className = 'skill-chip'; el.dataset.skill = s; el.textContent = s;
+  el.onclick = () => el.classList.toggle('selected');
+  sChips.appendChild(el);
+});
+
+// Build company weight rows
+const wContainer = document.getElementById('c-weights');
+SKILLS.forEach(s => {
+  const row = document.createElement('div');
+  row.className = 'weight-row';
+  row.innerHTML = `<span class="weight-label">${s}</span><input class="weight-input" type="number" data-skill="${s}" value="0" min="0" max="10">`;
+  wContainer.appendChild(row);
+});
+
+function setRole(role) {
+  currentRole = role;
+  const roles = ['student','company','admin'];
+  const activeClass = {'student':'active-student','company':'active-company','admin':'active-admin'};
+
+  roles.forEach(r => {
+    const tab = document.getElementById(`tab-${r}`);
+    tab.className = 'role-btn' + (r === role ? ` ${activeClass[r]}` : '');
+    document.getElementById(`content-${r}`).classList.toggle('show', r === role);
+  });
+
+  const card = document.getElementById('loginCard');
+  card.className = `login-card card-${role}`;
+}
+
+function toggleStudentMode(mode) {
+  document.getElementById('student-login-form').style.display    = mode==='login' ? 'block' : 'none';
+  document.getElementById('student-register-form').style.display = mode==='register' ? 'block' : 'none';
+}
+
+function toggleCompanyMode(mode) {
+  document.getElementById('company-login-form').style.display    = mode==='login' ? 'block' : 'none';
+  document.getElementById('company-register-form').style.display = mode==='register' ? 'block' : 'none';
+}
+
+async function doLogin(role) {
+  const ids = { student:['s-username','s-password','s-login-btn'], company:['c-username','c-password','c-login-btn'], admin:['a-username','a-password','a-login-btn'] };
+  const [uid, pid, bid] = ids[role];
+  const username = document.getElementById(uid).value.trim();
+  const password = document.getElementById(pid).value.trim();
+  if (!username || !password) return showToast('Enter username and password', 'error');
+  const btn = document.getElementById(bid); setLoading(btn, true);
+  try {
+    await api('/api/login', 'POST', { username, password, role });
+    window.location.href = '/dashboard';
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+  setLoading(btn, false);
+}
+
+async function doRegister(role) {
+  const btn = document.getElementById(role==='student'?'s-reg-btn':'c-reg-btn');
+  setLoading(btn, true);
+  try {
+    let payload = { role };
+    if (role === 'student') {
+      payload.username = document.getElementById('s-reg-username').value.trim();
+      payload.password = document.getElementById('s-reg-password').value.trim();
+      payload.roll     = document.getElementById('s-roll').value.trim();
+      payload.name     = document.getElementById('s-name').value.trim();
+      payload.cgpa     = document.getElementById('s-cgpa').value;
+      payload.backlogs = document.getElementById('s-backlogs').value;
+      payload.skills   = [...document.querySelectorAll('#s-skills .skill-chip.selected')].map(c=>c.dataset.skill);
+      if (!payload.skills.length) { showToast('Select at least one skill', 'error'); setLoading(btn,false); return; }
+    } else {
+      payload.username         = document.getElementById('c-reg-username').value.trim();
+      payload.password         = document.getElementById('c-reg-password').value.trim();
+      payload.company_name     = document.getElementById('c-name').value.trim();
+      payload.min_cgpa         = document.getElementById('c-min-cgpa').value;
+      payload.allowed_backlogs = document.getElementById('c-backlogs').value;
+      const sw = {};
+      document.querySelectorAll('#c-weights .weight-input').forEach(i => { let w=parseInt(i.value)||0; if(w>10) w=10; if(w<0) w=0; if(w>0) sw[i.dataset.skill]=w; });
+      payload.skill_weights = sw;
+    }
+    await api('/api/register', 'POST', payload);
+    showToast('Account created! Please sign in.');
+    setTimeout(() => { role==='student' ? toggleStudentMode('login') : toggleCompanyMode('login'); }, 1500);
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+  setLoading(btn, false);
+}
+
+// ── VALIDATION RULES ─────────────────────────────────────────────────────
+const RULES = {
+  notEmpty:    v => v.trim() ? null : 'This field is required',
+  username:    v => !v.trim()?'Username is required':v.length<4?'Min 4 characters':v.length>20?'Max 20 characters':/\s/.test(v)?'No spaces allowed':!/^[a-zA-Z0-9_]+$/.test(v)?'Letters, numbers, _ only':null,
+  password:    v => !v.trim()?'Password is required':v.length<6?'Min 6 characters':null,
+  roll:        v => !v.trim()?'Roll number required':!/^[a-zA-Z0-9]+$/.test(v)?'Alphanumeric only':v.length>10?'Max 10 characters':null,
+  fullname:    v => !v.trim()?'Name required':!/^[a-zA-Z\s]+$/.test(v)?'Letters and spaces only':v.trim().length<2?'Too short':null,
+  cgpa:        v => (v===''||v===null)?'CGPA required':isNaN(parseFloat(v))?'Enter a number':parseFloat(v)<0?'Cannot be negative':parseFloat(v)>10?'Cannot exceed 10':null,
+  backlogs:    v => (v==='')?'Required':isNaN(parseInt(v))?'Whole number only':parseInt(v)<0?'Cannot be negative':null,
+  companyName: v => !v.trim()?'Company name required':v.trim().length<2?'Too short':!/^[a-zA-Z0-9\s&.\-]+$/.test(v)?'No special characters except & . -':null,
+};
+
+function liveCheck(input, rule) {
+  const id = input.id;
+  const iconEl = document.getElementById(id + '-icon');
+  const errEl  = document.getElementById(id + '-err');
+  const error  = RULES[rule] ? RULES[rule](input.value) : null;
+  if (error) {
+    input.classList.remove('valid'); input.classList.add('invalid');
+    if (iconEl) { iconEl.textContent='✕'; iconEl.style.color='#f87171'; iconEl.classList.add('show'); }
+    if (errEl)  { errEl.textContent=error; errEl.classList.add('show'); }
+  } else {
+    input.classList.remove('invalid'); input.classList.add('valid');
+    if (iconEl) { iconEl.textContent='✓'; iconEl.style.color='#34d399'; iconEl.classList.add('show'); }
+    if (errEl)  { errEl.classList.remove('show'); }
+  }
+  return !error;
+}
+
+function vf(id, rule) { return liveCheck(document.getElementById(id), rule); }
+
+function updateStrength(inId, fillId, lblId) {
+  const v=document.getElementById(inId).value, fill=document.getElementById(fillId), lbl=document.getElementById(lblId);
+  let s=0;
+  if(v.length>=6)s++;if(v.length>=10)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^a-zA-Z0-9]/.test(v))s++;
+  const lvls=[{p:'0%',c:'transparent',t:''},{p:'25%',c:'#f87171',t:'Weak'},{p:'50%',c:'#fbbf24',t:'Fair'},{p:'75%',c:'#60a5fa',t:'Good'},{p:'100%',c:'#34d399',t:'Strong'},{p:'100%',c:'#a78bfa',t:'Very Strong ✓'}];
+  const l=lvls[Math.min(s,5)]; fill.style.width=l.p; fill.style.background=l.c; lbl.textContent=l.t; lbl.style.color=l.c;
+}
+
+// Wrap fields with validation icons after DOM loads
+function wrapField(inputId, rule, hint) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const parent = input.parentElement;
+  const wrap = document.createElement('div'); wrap.className = 'field-wrap';
+  parent.insertBefore(wrap, input); wrap.appendChild(input);
+  const icon = document.createElement('span'); icon.className='field-icon'; icon.id=inputId+'-icon'; wrap.appendChild(icon);
+  const err = document.createElement('div'); err.className='field-error'; err.id=inputId+'-err'; wrap.after(err);
+  if (hint) { const h=document.createElement('div'); h.className='field-hint'; h.textContent=hint; err.after(h); }
+  input.addEventListener('input', () => liveCheck(input, rule));
+}
+
+// Strength bar builder
+function addStrengthBar(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const bar = document.createElement('div'); bar.className='strength-bar';
+  const fill = document.createElement('div'); fill.className='strength-fill'; fill.id=inputId+'-sf'; bar.appendChild(fill);
+  const lbl = document.createElement('div'); lbl.className='strength-label'; lbl.id=inputId+'-sl';
+  input.closest('.form-group').appendChild(bar);
+  input.closest('.form-group').appendChild(lbl);
+  input.addEventListener('input', () => updateStrength(inputId, inputId+'-sf', inputId+'-sl'));
+}
+
+// Skills error builder
+function addSkillsError(containerId) {
+  const grid = document.getElementById(containerId);
+  if (!grid) return;
+  const err = document.createElement('div'); err.className='skills-required'; err.id=containerId+'-err';
+  err.textContent = 'Please select at least one skill';
+  grid.after(err);
+  grid.querySelectorAll('.skill-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (grid.querySelectorAll('.skill-chip.selected').length > 0) {
+        err.classList.remove('show'); grid.classList.remove('invalid-skills');
+      }
+    });
+  });
+}
+
+// Build validation on all register fields
+window.addEventListener('DOMContentLoaded', () => {
+  // Student register
+  wrapField('s-reg-username', 'username', 'Letters, numbers, _ only');
+  wrapField('s-reg-password', 'password', null); addStrengthBar('s-reg-password');
+  wrapField('s-roll',     'roll',     'Alphanumeric, max 10 chars');
+  wrapField('s-name',     'fullname', null);
+  wrapField('s-cgpa',     'cgpa',     null);
+  wrapField('s-backlogs', 'backlogs', null);
+  addSkillsError('s-skills');
+
+  // Company register
+  wrapField('c-reg-username', 'username', null);
+  wrapField('c-reg-password', 'password', null); addStrengthBar('c-reg-password');
+  wrapField('c-name', 'companyName', 'Letters, numbers, spaces, & . - allowed');
+  wrapField('c-min-cgpa',     'cgpa',     null);
+  wrapField('c-backlogs', 'backlogs', null);
+
+  // Login fields
+  ['s-username','s-password','c-username','c-password','a-username','a-password'].forEach(id => {
+    wrapField(id, 'notEmpty', null);
+  });
+});
+
+// ── OVERRIDE doRegister with validation ───────────────────────────────────
+const _origDoRegister = doRegister;
+window.doRegister = async function(role) {
+  let ok = true;
+
+  if (role === 'student') {
+    ok = [
+      vf('s-reg-username','username'), vf('s-reg-password','password'),
+      vf('s-roll','roll'), vf('s-name','fullname'),
+      vf('s-cgpa','cgpa'), vf('s-backlogs','backlogs'),
+    ].every(Boolean);
+    const skills = [...document.querySelectorAll('#s-skills .skill-chip.selected')];
+    if (!skills.length) {
+      const errEl  = document.getElementById('s-skills-err');
+      const gridEl = document.getElementById('s-skills');
+      if (errEl)  errEl.classList.add('show');
+      if (gridEl) gridEl.classList.add('invalid-skills');
+      ok = false;
+    }
+  }
+
+  if (role === 'company') {
+    ok = [
+      vf('c-reg-username','username'), vf('c-reg-password','password'),
+      vf('c-name','companyName'),
+      vf('c-min-cgpa','cgpa'), vf('c-backlogs','backlogs'),
+    ].every(Boolean);
+  }
+
+  if (!ok) { showToast('Please fix the highlighted errors', 'error'); return; }
+  await _origDoRegister(role);
+};
+
+// ── OVERRIDE doLogin with validation ─────────────────────────────────────
+const _origDoLogin = doLogin;
+window.doLogin = async function(role) {
+  const m = { student:['s-username','s-password'], company:['c-username','c-password'], admin:['a-username','a-password'] };
+  const fieldsOk = m[role].map(id => vf(id,'notEmpty')).every(Boolean);
+  if (!fieldsOk) { showToast('Please fill all fields', 'error'); return; }
+  await _origDoLogin(role);
+};
+</script>
+</body>
+</html>

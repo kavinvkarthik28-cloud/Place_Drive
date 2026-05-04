@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}PlaceDrive{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-name">PlaceDrive</span>
+  </div>
+  {% block nav %}{% endblock %}
+  <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--glass-border)">
+    <div style="padding:10px 12px;font-size:12px;color:var(--text-dim)" id="userInfo">Loading...</div>
+    <a href="/logout" class="nav-item" style="color:var(--danger)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </a>
+  </div>
+</nav>
+<main class="main-content"><div class="page-wrapper">{% block content %}{% endblock %}</div></main>
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastMsg">Success</span></div>
+<script src="/static/js/main.js"></script>
+<script>
+api('/api/me').then(u=>{
+  document.getElementById('userInfo').innerHTML=`<span style="color:var(--text-muted);font-weight:500">${u.username}</span><span class="badge badge-blue" style="display:block;width:fit-content;margin-top:4px">${u.role}</span>`;
+}).catch(()=>{});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
